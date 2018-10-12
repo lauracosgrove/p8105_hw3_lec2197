@@ -132,24 +132,42 @@ instacart %>%
   group_by(department, aisle, aisle_id) %>% 
   tally() %>% 
   ungroup() %>% 
-  mutate(aisle = factor(aisle, levels = aisle[order(aisle_id)])) %>% 
-  ggplot(aes(x = aisle, y = n, color = department)) +
-  geom_point() + 
+  mutate(aisle = factor(aisle, levels = aisle[order(n)])) %>% 
+  ggplot(aes(x = aisle, y = n, fill = department)) +
+  geom_col() + 
+  coord_flip() +
   theme_bw() + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, size = rel(0.7))) +
+  theme(axis.text.y = element_text(size = rel(0.5))) +
   labs(
     title = "Popular Aisles",
-    x = "aisle",
-    y = "order count",
+    x = "order count",
+    y = "aisle",
     caption = "Data from instacart"
   ) + 
-  theme(legend.position = "bottom")
+  viridis::scale_color_viridis(
+    name = "State", 
+    discrete = TRUE
+    ) 
+
+
+ggsave("instacart_plot.jpg", scale = 2)
 ```
 
-  
+That's a small version, so I'm printing a more-readable one below (from the saved plot):
+
+```{r instacart plot printed, out.width = '100%'}
+knitr::include_graphics("./instacart_plot.jpg")
+```
   
 
 _Make a table showing the most popular item in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”._
+
+```{r most popular item in }
+instacart
+  
+
+```
+
 
 
 _Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table)._
