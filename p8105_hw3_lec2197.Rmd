@@ -5,8 +5,151 @@ output: github_document
 
 ```{r setup}
 library(tidyverse)
+library(p8105.datasets)
+library(ggthemes)
+```
+
+## Problem 1
+
+Load BRFSS data
+
+```{r brfss data, cache=TRUE}
+data(brfss_smart2010)
+
+brfss_smart2010 <- brfss_smart2010 %>% 
+  janitor::clean_names() %>% 
+  rename(state = locationabbr, state_and_county = locationdesc) %>% 
+  filter(topic == "Overall Health", !is.na(response)) %>%
+  mutate(response = factor(response, levels = c("Excellent", "Very good", "Good", "Fair", "Poor")))
+
+```
+
+_In 2002, which states were observed at 7 locations?_
+
+```{r seven locations}
+knitr::kable(brfss_smart2010 %>% 
+  filter(year == 2002) %>% 
+  group_by(state) %>% 
+  distinct(state_and_county) %>% 
+  tally() %>% 
+  filter(n == 7)
+)
+```
+
+Connecticut, Florida, and North Carolina were observed at 7 distinct locations in 2002.
+
+_Make a “spaghetti plot” that shows the number of locations in each state from 2002 to 2010._
+
+```{r spaghetti}
+#Save number of locations data in each state
+number_locations <- brfss_smart2010 %>% 
+  group_by(state, year) %>% 
+  distinct(state_and_county, year) %>% 
+  add_tally()
+
+left_join(brfss_smart2010, number_locations) %>% 
+  rename(n_unique_locations = n) %>%
+  distinct(year, state, n_unique_locations) %>% 
+  ggplot(aes(x = year, y = n_unique_locations)) +
+  geom_line(aes(color = state)) + 
+  theme_bw() + 
+  labs(
+    title = "Locations Responding to BRFSS by State, 2002-2010",
+    x = "Number of Locations",
+    y = "Year",
+    caption = "Data from brfss"
+  ) + 
+  viridis::scale_color_viridis(
+    name = "State", 
+    discrete = TRUE
+    )
+```
 
 
+_Make a table showing, for the years 2002, 2006, and 2010, the mean and standard deviation of the proportion of “Excellent” responses across locations in NY State._
+
+```{r mean sd excellent}
+brfss_smart2010 %>%
+  filter(response == "Excellent", year == 2002 | year == 2006 | year == 2010) %>% 
+  group_by(state, year) %>% 
+  summarize(mean = mean(data_value), sd = sd(data_value))
+```
+
+_For each year and state, compute the average proportion in each response category (taking the average across locations in a state). Make a five-panel plot that shows, for each response category separately, the distribution of these state-level averages over time._
+
+```{r}
+brfss_smart2010 %>%
+  group_by(state, year, response) %>% 
+  summarize(mean = mean(data_value)) %>% 
+  ggplot(aes(x = year, y = mean)) +
+  geom_point(aes(color = state), size = .1) +
+  geom_line(aes(color = state), alpha = .3) + 
+  facet_grid( ~ response)  +
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(
+    title = "Proportion of Response Types by State, 2002-2010",
+    x = "Year",
+    y = "Mean Proportion",
+    caption = "Data from brfss"
+  ) + 
+  viridis::scale_color_viridis(
+    name = "State", 
+    discrete = TRUE
+    ) 
 
 
 ```
+
+## Problem 2
+
+This problem uses the Instacart data. DO NOT include this dataset in your local data directory; instead, load the data from the  p8105.datasets package (it’s called instacart).
+
+```{r load instacart, cache = TRUE}
+data(instacart)
+```
+
+
+_The goal is to do some exploration of this dataset. To that end, write a short description of the dataset, noting the size and structure of the data, describing some key variables, and giving illustrative examples of observations._
+
+This large dataset contains information from Instacart, an online grocery service. Each of the `r nrow(instacart)` observations is an individual product ordered in a given order, with associated contextual information about the following:
+
+* the user, such as the days since the user has made a prior order and their ID
+
+* order session info, such as the index of the order in which the product was added into the cart for the given order session, and the order session's hour of day and day of week
+
+* the product, such as its ID, aisle, and department.
+
+The largest order in this dataset is `r max(instacart$add_to_cart_order)` items (using add to cart order as a proxy)! The median time of order for individual products is `r median(instacart$order_hour_of_day) -12` p.m. `r nrow(instacart %>% distinct(department))` departments are represented in the data, the most popular of which is `r instacart %>% summarize(most_popular = names(which.max(table(department))))`. The least popular is the `r instacart %>% summarize (least_popular = names(which.min(table(department))))` goods department.
+
+There are `r nrow(instacart %>% distinct(aisle))` aisles represented in the data, the most popular of which is `r instacart %>% summarize(most_popular = names(which.max(table(aisle))))`. The least popular is the `r instacart %>% summarize (least_popular = names(which.min(table(aisle))))` aisle.
+
+
+_Make a plot that shows the number of items ordered in each aisle. Order aisles sensibly, and organize your plot so others can read it._
+
+```{r plot number items ordered in each aisle}
+instacart %>%
+  group_by(department, aisle, aisle_id) %>% 
+  tally() %>% 
+  ungroup() %>% 
+  mutate(aisle = factor(aisle, levels = aisle[order(aisle_id)])) %>% 
+  ggplot(aes(x = aisle, y = n, color = department)) +
+  geom_point() + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size = rel(0.7))) +
+  labs(
+    title = "Popular Aisles",
+    x = "aisle",
+    y = "order count",
+    caption = "Data from instacart"
+  ) + 
+  theme(legend.position = "bottom")
+```
+
+  
+  
+
+_Make a table showing the most popular item in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”._
+
+
+_Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table)._
