@@ -223,9 +223,9 @@ ny_noaa %>%
   knitr::kable()
 ```
 
-Nearly half of the observations in the dataset have missing temperature data. Such a high null value might be a result of systematic lack of data collection rather than aberrations. Other abberations also seem to be present. Precipitation data is the most reliably present in the dataset. The summary values for precipitation are `r summary(ny_noaa$prcp)`, and for snowfall `r summary(ny_noaa$snow)`. Both max values seem very high for precipitation; checking the NOAA website, the values are supposed to be reported in inches, and I haven't heard about a `r max(ny_noaa$snow, na.rm = TRUE)/12`- foot snowfall in NY history yet! It also seems off that there would be a negative number for snowfall, although perhaps this represents measurement of snowmelt. 
+Nearly half of the observations in the dataset have missing temperature data. Such a high null value might be a result of systematic lack of data collection rather than aberrations. Other abberations also seem to be present. Precipitation data is the most reliably present in the dataset. The max observed value for precipitation is `r max(ny_noaa$prcp, na.rm = TRUE)`, and for snowfall is `r max(ny_noaa$snow, na.rm = TRUE)`. Both max values seem very high for precipitation; but checking the source for the data, the units of precipitation are in tenths of a millimeter and for snowfall are in millimeters.It also seems off that there would be a negative number for snowfall, although perhaps this represents measurement of snowmelt. 
 
-We see similar things in the outlier values for `tmax` and `tmin`. It looks like the "600" value is a common aberration, appearing 34 times in both variables.
+Similarly, the temperature data is in tenths of a degree Celsius. The temperature sensors are very sensitive, but possibly become less accurate on certain temperatures; we see similar maximum values for `tmax` and `tmin`. It looks like the "600" value, or 60ºC, is a ceiling, appearing 34 times in both variables.
 
 ```{r}
 ny_noaa %>% 
@@ -251,12 +251,58 @@ ny_noaa %>%
 
 Do some data cleaning. Create separate variables for year, month, and day. Ensure observations for temperature, precipitation, and snowfall are given in reasonable units. For snowfall, what are the most commonly observed values? Why?
 
+```{r data cleaning}
+ny_noaa <- ny_noaa %>% 
+  separate(col = date, into = c("year", "month", "day"), sep = "-") %>% 
+  mutate(tmax = as.numeric(tmax)/10, tmin = as.numeric(tmin)/10, prcp = prcp/100, snow = snow/10, snwd = snwd/10 ) %>% 
+  rename(tmax_ºC = tmax, tmin_ºC = tmin, prcp_cm = prcp , snow_cm = snow, snwd_cm = snwd)
+
+head(sort(table(ny_noaa$snow_cm, useNA = "ifany"), decreasing = TRUE))
+```
+
+The most common observed value for snowfall is 0cm by  a factor of ~`r round(2008508/31022)`x, compared to the next non-missing value (2.5cm). This is expected, because the weather data is year-round. 
+
+Make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?
+
+```{r two panel plot}
+ny_noaa %>% 
+  mutate(month = as.numeric(month)) %>% 
+  filter(month == 1 | month == 7) %>%
+  group_by(month, year, id) %>%
+  summarize(mean_tmax = mean(tmax_ºC)) %>% 
+  ggplot(aes(x = year, y = mean_tmax)) +
+  geom_point() + 
+  facet_grid(~month) +
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(
+    title = "Average temperatures at NY weather stations, January and July ",
+    x = "Year",
+    y = "Maximum Temperature (ºC)",
+    caption = "Data from noaa"
+  ) 
+  
+```
+
+
+Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option); and (ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
+
+```{r two panel tmax cis tmin}
+ny_noaa %>% 
+  ggplot(aes(x = tmax_ºC, y = tmin_ºC)) +
+  geom_smooth() + 
+  theme_bw() + 
+  labs(
+    title = "Relationship of daily max to daily min temperatures at NY weather stations, 1981-2010",
+    x = "Maximum Temperature (ºC)",
+    y = "Minimum Temperature (ºC)",
+    caption = "Data from noaa"
+  ) 
+```
+
 ```{r}
 
 ```
 
 
-Make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?
-
-Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option); and (ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
 
