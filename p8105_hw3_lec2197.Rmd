@@ -98,7 +98,14 @@ brfss_smart2010 %>%
     discrete = TRUE
     ) 
 
+ggsave("brfss_plot.jpg", scale = 2)
 
+```
+
+That's a small version, so I'm printing a more-readable one below (from the saved plot):
+
+```{r brfss plot printed, out.width = '100%'}
+knitr::include_graphics("./brfss_plot.jpg")
 ```
 
 ## Problem 2
@@ -140,12 +147,12 @@ instacart %>%
   theme(axis.text.y = element_text(size = rel(0.5))) +
   labs(
     title = "Popular Aisles",
-    x = "order count",
-    y = "aisle",
+    x = "aisle name",
+    y = "order count",
     caption = "Data from instacart"
   ) + 
   viridis::scale_color_viridis(
-    name = "State", 
+    name = "Department", 
     discrete = TRUE
     ) 
 
@@ -163,11 +170,93 @@ knitr::include_graphics("./instacart_plot.jpg")
 _Make a table showing the most popular item in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”._
 
 ```{r most popular item in }
-instacart
-  
+baking <- instacart %>% 
+  filter(aisle == "baking ingredients") %>% 
+  summarize(most_popular = names(which.max(table(product_name))))
 
+dog_food <- instacart %>% 
+  filter(aisle == "dog food care") %>% 
+  summarize(most_popular = names(which.max(table(product_name))))
+
+veg_fruit <- instacart %>% 
+  filter(aisle == "packaged vegetables fruits") %>% 
+  summarize(most_popular = names(which.max(table(product_name))))
+
+knitr::kable(rbind(baking, dog_food, veg_fruit) %>% 
+  mutate(aisle = c("baking ingredients", "dog food care", "packaged vegetables fruits"))
+)
 ```
 
 
 
 _Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table)._
+
+```{r}
+instacart %>% 
+    filter(product_name == "Pink Lady Apples" | product_name == "Coffee Ice Cream") %>%
+    group_by(order_dow, product_name) %>% 
+    summarize(mean_hour = mean(order_hour_of_day)) %>% 
+    ungroup() %>% 
+    arrange(product_name) %>% 
+    spread(key = product_name, value = mean_hour) %>% 
+    mutate(order_dow = replace(order_dow, 1:7, c("sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"))) %>% 
+    rename('Order Day of Week' = order_dow) %>% 
+  knitr::kable(caption = "Mean Hour of Day Order Placed (x/24h)")
+```
+
+## Problem 3
+
+This problem uses the NY NOAA data. DO NOT include this dataset in your local data directory; instead, load the data from the  p8105.datasets package (it’s called ny_noaa).
+
+```{r load noaa, cache = TRUE}
+data(ny_noaa)
+            
+```
+
+This dataset is composed of weather station data in NY state. The key variables are `prcp`, or precipitation; `snow`, or snowfall; `snwd`, or snow depth; and `tmax`/`tmin`, or maximum and minimum temperature. THe ID of the weather station as well as the date of data collection (data is day-level) is also present.  This dataset has `r nrow(ny_noaa)` observations, but a good deal of missing data. A table of missing data is below:
+
+```{r}
+ny_noaa %>% 
+  map_df(function(x) sum(is.na(x))) %>%
+  gather(feature, num_nulls) %>% 
+  mutate(percent_nulls = 100*num_nulls/nrow(ny_noaa)) %>% 
+  knitr::kable()
+```
+
+Nearly half of the observations in the dataset have missing temperature data. Such a high null value might be a result of systematic lack of data collection rather than aberrations. Other abberations also seem to be present. Precipitation data is the most reliably present in the dataset. The summary values for precipitation are `r summary(ny_noaa$prcp)`, and for snowfall `r summary(ny_noaa$snow)`. Both max values seem very high for precipitation; checking the NOAA website, the values are supposed to be reported in inches, and I haven't heard about a `r max(ny_noaa$snow, na.rm = TRUE)/12`- foot snowfall in NY history yet! It also seems off that there would be a negative number for snowfall, although perhaps this represents measurement of snowmelt. 
+
+We see similar things in the outlier values for `tmax` and `tmin`. It looks like the "600" value is a common aberration, appearing 34 times in both variables.
+
+```{r}
+ny_noaa %>% 
+  mutate(tmax = as.numeric(tmax), tmin = as.numeric(tmin)) %>% 
+  summarize(median_tmax = median(tmax, na.rm = TRUE),
+            IQR_tmax = IQR(tmax, na.rm = TRUE),
+            max_tmax = max(tmax, na.rm = TRUE),
+            min_tmax = min(tmax, na.rm = TRUE),
+            count_600 = sum(ifelse(tmax == 600, 1, 0), na.rm = TRUE)
+              ) %>% 
+  knitr::kable()
+
+ny_noaa %>% 
+  mutate(tmax = as.numeric(tmax), tmin = as.numeric(tmin)) %>% 
+  summarize(median_tmin = median(tmin, na.rm = TRUE),
+            IQR_tmin = IQR(tmin, na.rm = TRUE),
+            max_tmin = max(tmin, na.rm = TRUE),
+            min_tmin = min(tmin, na.rm = TRUE),
+            count_600 = sum(ifelse(tmax == 600, 1, 0), na.rm = TRUE)
+            ) %>% 
+  knitr::kable()  
+```
+
+Do some data cleaning. Create separate variables for year, month, and day. Ensure observations for temperature, precipitation, and snowfall are given in reasonable units. For snowfall, what are the most commonly observed values? Why?
+
+```{r}
+
+```
+
+
+Make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?
+
+Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option); and (ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
+
