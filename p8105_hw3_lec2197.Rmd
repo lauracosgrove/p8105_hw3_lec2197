@@ -11,8 +11,6 @@ library(ggthemes)
 
 ## Problem 1
 
-Load BRFSS data
-
 ```{r brfss data, cache=TRUE}
 data(brfss_smart2010)
 
@@ -110,8 +108,6 @@ knitr::include_graphics("./brfss_plot.jpg")
 
 ## Problem 2
 
-This problem uses the Instacart data. DO NOT include this dataset in your local data directory; instead, load the data from the  p8105.datasets package (it’s called instacart).
-
 ```{r load instacart, cache = TRUE}
 data(instacart)
 ```
@@ -188,7 +184,6 @@ knitr::kable(rbind(baking, dog_food, veg_fruit) %>%
 ```
 
 
-
 _Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table)._
 
 ```{r}
@@ -201,19 +196,18 @@ instacart %>%
     spread(key = product_name, value = mean_hour) %>% 
     mutate(order_dow = replace(order_dow, 1:7, c("sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"))) %>% 
     rename('Order Day of Week' = order_dow) %>% 
-  knitr::kable(caption = "Mean Hour of Day Order Placed (x/24h)")
+  knitr::kable()
 ```
+This table shows the mean hour of day the orders were placed, in 24:00 time. It's not surprising that the mean is around noon, because orders uniformly distributed throughout the day would have an expected value of noon.
 
 ## Problem 3
-
-This problem uses the NY NOAA data. DO NOT include this dataset in your local data directory; instead, load the data from the  p8105.datasets package (it’s called ny_noaa).
 
 ```{r load noaa, cache = TRUE}
 data(ny_noaa)
             
 ```
 
-This dataset is composed of weather station data in NY state. The key variables are `prcp`, or precipitation; `snow`, or snowfall; `snwd`, or snow depth; and `tmax`/`tmin`, or maximum and minimum temperature. THe ID of the weather station as well as the date of data collection (data is day-level) is also present.  This dataset has `r nrow(ny_noaa)` observations, but a good deal of missing data. A table of missing data is below:
+This dataset is composed of weather station data in NY state. The key variables are `prcp`, or precipitation; `snow`, or snowfall; `snwd`, or snow depth; and `tmax`/`tmin`, or maximum and minimum temperature. The ID of the weather station as well as the date of data collection (data is day-level) is also present.  This dataset has `r nrow(ny_noaa)` observations, but a good deal of missing data. A table of missing data is below:
 
 ```{r}
 ny_noaa %>% 
@@ -223,7 +217,7 @@ ny_noaa %>%
   knitr::kable()
 ```
 
-Nearly half of the observations in the dataset have missing temperature data. Such a high null value might be a result of systematic lack of data collection rather than aberrations. Other abberations also seem to be present. Precipitation data is the most reliably present in the dataset. The max observed value for precipitation is `r max(ny_noaa$prcp, na.rm = TRUE)`, and for snowfall is `r max(ny_noaa$snow, na.rm = TRUE)`. Both max values seem very high for precipitation; but checking the source for the data, the units of precipitation are in tenths of a millimeter and for snowfall are in millimeters.It also seems off that there would be a negative number for snowfall, although perhaps this represents measurement of snowmelt. 
+Nearly half of the observations in the dataset have missing temperature data. Such a high null value might be a result of systematic lack of data collection rather than aberrations. Other abberations also seem to be present. Precipitation data is the most reliably present in the dataset. The max observed value for precipitation is `r max(ny_noaa$prcp, na.rm = TRUE)`, and for snowfall is `r max(ny_noaa$snow, na.rm = TRUE)`. Both max values seem very high for precipitation; but checking the source for the data, the units of precipitation are in tenths of a millimeter and for snowfall are in millimeters. It also seems off that there would be a negative number for snowfall (the minimum snowfall value is `r min(ny_noaa$snow, na.rm = TRUE)`, although perhaps this represents measurement of snowmelt. 
 
 Similarly, the temperature data is in tenths of a degree Celsius. The temperature sensors are very sensitive, but possibly become less accurate on certain temperatures; we see similar maximum values for `tmax` and `tmin`. It looks like the "600" value, or 60ºC, is a ceiling, appearing 34 times in both variables.
 
@@ -249,7 +243,7 @@ ny_noaa %>%
   knitr::kable()  
 ```
 
-Do some data cleaning. Create separate variables for year, month, and day. Ensure observations for temperature, precipitation, and snowfall are given in reasonable units. For snowfall, what are the most commonly observed values? Why?
+Now, I will create separate variables for year, month, and day, and change the units of temperature to Celsius, and precipitation, snowfall, and snowpack to centimeters.
 
 ```{r data cleaning}
 ny_noaa <- ny_noaa %>% 
@@ -281,7 +275,13 @@ ny_noaa %>%
     caption = "Data from noaa"
   )
   
-  
+ggsave("janjulytemp.jpg", scale = 2)
+```
+
+That's a small version, so I'm printing a more-readable one below (from the saved plot):
+
+```{r jan-july plot printed, out.width = '100%'}
+knitr::include_graphics("./janjulytemp.jpg")
 ```
 
 The average maximum temperatures in January and July differ by about 30ºC. We can also see year-to-year variability in maximum temperatures for seasons; it appears that comparatively hotter years can follow comparatively colder years in a pattern that oscillates around the average value. In July of 1988, there is an outlier measurement at one weather station, showing an unusually cold value. This is seen is January 1982 as well, and to a lesser extent in other months. This is likely due to location-related microclimate at a given weather station, or some error condition.
