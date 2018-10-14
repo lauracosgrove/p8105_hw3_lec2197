@@ -262,12 +262,11 @@ head(sort(table(ny_noaa$snow_cm, useNA = "ifany"), decreasing = TRUE))
 
 The most common observed value for snowfall is 0cm by  a factor of ~`r round(2008508/31022)`x, compared to the next non-missing value (2.5cm). This is expected, because the weather data is year-round. 
 
-Make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?
-
-```{r two panel plot}
+```{r two panel plot avg max in jan and july}
 ny_noaa %>% 
   mutate(month = as.numeric(month)) %>% 
   filter(month == 1 | month == 7) %>%
+  mutate(month = recode(month, !!!month.name)) %>% 
   group_by(month, year, id) %>%
   summarize(mean_tmax = mean(tmax_ºC)) %>% 
   ggplot(aes(x = year, y = mean_tmax)) +
@@ -276,18 +275,21 @@ ny_noaa %>%
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   labs(
-    title = "Average temperatures at NY weather stations, January and July ",
+    title = "Average temperatures at NY weather stations",
     x = "Year",
     y = "Maximum Temperature (ºC)",
     caption = "Data from noaa"
-  ) 
+  )
+  
   
 ```
 
+The average maximum temperatures in January and July differ by about 30ºC. We can also see year-to-year variability in maximum temperatures for seasons; it appears that comparatively hotter years can follow comparatively colder years in a pattern that oscillates around the average value. In July of 1988, there is an outlier measurement at one weather station, showing an unusually cold value. This is seen is January 1982 as well, and to a lesser extent in other months. This is likely due to location-related microclimate at a given weather station, or some error condition.
 
-Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option); and (ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
 
-```{r two panel tmax cis tmin}
+_Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option);_ 
+
+```{r two panel tmax vs tmin}
 ny_noaa %>% 
   ggplot(aes(x = tmax_ºC, y = tmin_ºC)) +
   geom_smooth() + 
@@ -300,8 +302,83 @@ ny_noaa %>%
   ) 
 ```
 
-```{r}
+As expected, the maximum and minimum temperatures follow a linear relationship for this dataset.
 
+_and (ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year._
+
+```{r plot snowfall greater than 0 less than 100 tenths of a cm}
+# Since I earlier divided the snowfall values by 10 to interpret in terms of cm, plotting snowfall values greater than 0 and less than 100 for my dataset is snow_cm between 0 and 10 cm.
+#I will use patchwork in combination with facet-grid to show a reasonable plot,
+library(patchwork)
+
+y_81to85 <-  ny_noaa %>% 
+  filter(snow_cm > 0 & snow_cm < 10) %>%
+  filter(year >= 1981 & year <= 1985) %>% 
+  ggplot(aes(x = snow_cm)) +
+  geom_density() + 
+  theme_bw() +
+  facet_grid(~year) + 
+  labs(
+    title = "Distribution of Daily Snowfall, by Year",
+    x = ""
+  )
+
+y_86to90 <-  ny_noaa %>% 
+  filter(snow_cm > 0 & snow_cm < 10) %>%
+  filter(year >= 1986 & year <= 1990) %>% 
+  ggplot(aes(x = snow_cm)) +
+  geom_density() + 
+  theme_bw() + 
+  facet_grid(~year)  + 
+  labs(
+    x = ""
+  )
+
+y_91to95 <-  ny_noaa %>% 
+  filter(snow_cm > 0 & snow_cm < 10) %>%
+  filter(year >= 1991 & year <= 1995) %>% 
+  ggplot(aes(x = snow_cm)) +
+  geom_density() + 
+  theme_bw() + 
+  facet_grid(~year) + 
+  labs(
+    x = ""
+  )
+  
+y_96to00 <-  ny_noaa %>% 
+  filter(snow_cm > 0 & snow_cm < 10) %>%
+  filter(year >= 1996 & year <= 2000) %>% 
+  ggplot(aes(x = snow_cm)) +
+  geom_density() + 
+  theme_bw() + 
+  facet_grid(~year) + 
+  labs(
+    x = ""
+  )
+  
+y_01to05 <-  ny_noaa %>% 
+  filter(snow_cm > 0 & snow_cm < 10) %>%
+  filter(year >= 2001 & year <= 2005) %>% 
+  ggplot(aes(x = snow_cm)) +
+  geom_density() + 
+  theme_bw() + 
+  facet_grid(~year) + 
+  labs(
+    x = ""
+  )
+  
+y_06to10 <-  ny_noaa %>% 
+  filter(snow_cm > 0 & snow_cm < 10) %>%
+  filter(year >= 2006 & year <= 2010) %>% 
+  ggplot(aes(x = snow_cm)) +
+  geom_density() + 
+  theme_bw() + 
+  facet_grid(~year)
+
+(y_81to85 / y_86to90 / y_91to95 / y_96to00 / y_01to05 / y_06to10) + 
+  labs(
+    x = "Centimeters of Snowfall"
+  ) 
 ```
 
 
