@@ -375,10 +375,16 @@ y_06to10 <-  ny_noaa %>%
   theme_bw() + 
   facet_grid(~year)
 
-(y_81to85 / y_86to90 / y_91to95 / y_96to00 / y_01to05 / y_06to10) + 
-  labs(
-    x = "Centimeters of Snowfall"
-  ) 
+y_81to85 / y_86to90 / y_91to95 / y_96to00 / y_01to05 / y_06to10 + 
+  labs(x = "Centimeters of Snowfall")
+       
+ggsave("snowfall.jpg", scale = 2)
+```
+
+Again, that's a cramped version, so I'm printing a more-readable one below (from the saved plot):
+
+```{r snowfall plot printed, out.width = '100%'}
+knitr::include_graphics("./snowfall.jpg")
 ```
 
 
